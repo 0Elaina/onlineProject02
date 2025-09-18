@@ -1,10 +1,18 @@
 package com.itheima.ui;
 
+import com.itheima.domain.User;
+
 import javax.swing.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.ArrayList;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class RegisterJFrame extends JFrame implements MouseListener {
+
+    ArrayList<User> allUsers;
 
     //提升三个输入框的变量的作用范围，让这三个变量可以在本类中所有方法里面可以使用。
     JTextField username = new JTextField();
@@ -16,7 +24,8 @@ public class RegisterJFrame extends JFrame implements MouseListener {
     JButton reset = new JButton();
 
 
-    public RegisterJFrame() {
+    public RegisterJFrame(ArrayList<User> allUsers) {
+        this.allUsers = allUsers;
         initFrame();
         initView();
         setVisible(true);
@@ -24,7 +33,66 @@ public class RegisterJFrame extends JFrame implements MouseListener {
 
     @Override
     public void mouseClicked(MouseEvent e) {
+        if (e.getSource() == reset) {
+            username.setText("");
+            password.setText("");
+            rePassword.setText("");
+        } else if (e.getSource() == submit) {
+            if (username.getText().length() == 0 || password.getText().length() == 0 || rePassword.getText().length() == 0) {
+                showDialog("用户名或密码不能为空");
+                return;
+            }
 
+            if (!password.getText().equals(rePassword.getText())) {
+                showDialog("两次输入的密码不同");
+                return;
+            }
+
+            if (!username.getText().matches("[a-zA-Z0-9_-]{4,16}")) {
+                showDialog("用户名不符合规则，请重新输入");
+                return;
+            }
+
+            if (!password.getText().matches("[a-zA-Z0-9_-]{3,16}")) {
+                showDialog("密码不符合规则，请重新输入，密码至少三位");
+                return;
+            }
+
+            if (containsUsername(username.getText())) {
+                showDialog("用户名重复，请重新输入");
+                return;
+            }
+
+            allUsers.add(new User(username.getText(), password.getText()));
+
+            try {
+                BufferedWriter bw = new BufferedWriter(new FileWriter("puzzlegame\\userinfo.txt"));
+                for (User user : allUsers) {
+                    bw.write(user.toString());
+                    bw.newLine();
+                }
+                bw.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+
+            showDialog("注册成功");
+            this.dispose();
+            try {
+                new LoginJFrame();
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+    }
+
+    public boolean containsUsername(String username) {
+        for (User user : allUsers) {
+            if (user.getUsername().equals(username)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -124,18 +192,19 @@ public class RegisterJFrame extends JFrame implements MouseListener {
 
     //只创建一个弹框对象
     JDialog jDialog = new JDialog();
+
     //因为展示弹框的代码，会被运行多次
     //所以，我们把展示弹框的代码，抽取到一个方法中。以后用到的时候，就不需要写了
     //直接调用就可以了。
-    public void showDialog(String content){
-        if(!jDialog.isVisible()){
+    public void showDialog(String content) {
+        if (!jDialog.isVisible()) {
             //把弹框中原来的文字给清空掉。
             jDialog.getContentPane().removeAll();
             JLabel jLabel = new JLabel(content);
-            jLabel.setBounds(0,0,200,150);
+            jLabel.setBounds(0, 0, 200, 150);
             jDialog.add(jLabel);
             //给弹框设置大小
-            jDialog.setSize(200, 150);
+            jDialog.setSize(300, 150);
             //要把弹框在设置为顶层 -- 置顶效果
             jDialog.setAlwaysOnTop(true);
             //要让jDialog居中
